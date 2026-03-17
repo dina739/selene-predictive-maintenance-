@@ -1,14 +1,14 @@
 """
-SELENE - Hugging Face Spaces Deployment
-Predictive Maintenance with Self-Supervised Learning + Explainable AI
+SELENE - Predictive Maintenance Web App
+Deployed on Hugging Face Spaces
 """
 
 import gradio as gr
 import torch
 import numpy as np
 import pandas as pd
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add src to path
@@ -17,17 +17,20 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.autoencoder_model import Autoencoder
 from src.explainer import MaintenanceExplainer
 
-# Load models (cached for performance)
+# Load models
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-@st.cache_resource
 def load_models():
     """Load all SELENE models"""
     # Load autoencoder
     autoencoder = Autoencoder(input_dim=2).to(device)
-    checkpoint = torch.load('models/autoencoder_complete.pth', 
-                           map_location=device, 
-                           weights_only=False)
+    
+    # Check if model file exists
+    model_path = 'models/autoencoder_complete.pth'
+    if not os.path.exists(model_path):
+        return None, None, None, "❌ Model file not found. Please check deployment."
+    
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
     autoencoder.load_state_dict(checkpoint['model_state_dict'])
     autoencoder.eval()
     scaler = checkpoint['scaler']
@@ -35,12 +38,16 @@ def load_models():
     # Load explainer
     explainer = MaintenanceExplainer()
     
-    return autoencoder, scaler, explainer
+    return autoencoder, scaler, explainer, "✅ Models loaded successfully"
 
-autoencoder, scaler, explainer = load_models()
+# Load at startup
+autoencoder, scaler, explainer, status = load_models()
 
-def predict_anomaly(vibration, temperature, cycle):
+def analyze_machine(vibration, temperature, cycle):
     """Main prediction function"""
+    
+    if autoencoder is None:
+        return "❌ Error", "0.0", "Models not loaded properly"
     
     # Prepare input
     input_data = np.array([[vibration, temperature]])
@@ -52,7 +59,7 @@ def predict_anomaly(vibration, temperature, cycle):
         reconstruction = autoencoder(input_tensor)
         anomaly_score = torch.mean((input_tensor - reconstruction) ** 2).item()
     
-    # Threshold (from your training)
+    # Threshold (from training)
     threshold = 0.5
     rul = max(0, 200 - cycle)
     
@@ -70,19 +77,17 @@ def predict_anomaly(vibration, temperature, cycle):
     # Determine status
     if anomaly_score > threshold:
         status = "⚠️ ANOMALY DETECTED"
-        color = "red"
     else:
         status = "✅ NORMAL OPERATION"
-        color = "green"
     
-    return status, f"Score: {anomaly_score:.3f}", explanation
+    return status, f"{anomaly_score:.3f}", explanation
 
 # Create Gradio interface
 with gr.Blocks(title="SELENE Predictive Maintenance", 
                theme=gr.themes.Soft()) as demo:
     gr.Markdown("""
     # 🔧 SELENE: AI-Powered Predictive Maintenance
-    *Self-Supervised Learning + Uncertainty Quantification + Explainable AI*
+    *Self-Supervised Learning + Explainable AI*
     
     Enter machine sensor readings to get real-time analysis and maintenance recommendations.
     """)
@@ -104,7 +109,7 @@ with gr.Blocks(title="SELENE Predictive Maintenance",
     explanation = gr.Markdown()
     
     analyze_btn.click(
-        fn=predict_anomaly,
+        fn=analyze_machine,
         inputs=[vibration, temperature, cycle],
         outputs=[status, score, explanation]
     )
@@ -118,4 +123,5 @@ with gr.Blocks(title="SELENE Predictive Maintenance",
     - Powered by GroqCloud for AI explanations
     """)
 
+# For Hugging Face Spaces
 demo.launch()
