@@ -1,0 +1,58 @@
+# API keys and secrets
+.env
+*.env
+**/*.env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VS Code settings
+.vscode/
+*.code-workspace
+
+# Model files (too large for git)
+models/*.pkl
+models/*.pth
+models/*.h5
+*.pt
+*.pth
+*.onnx
+
+# Data files (too large for git)
+data/raw/*.csv
+data/processed/*.csv
+*.csv
+*.xlsx
+*.parquet
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# Virtual environment
+venv/
+env/
+ENV/
+myenv/
+virtualenv/
+
+# IDE settings
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
