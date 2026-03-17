@@ -29,4 +29,6 @@ ENV/
 
 # OS generated files
 .DS_Store
-Thumbs.db
+Thumbs.db\n# Images
+reports/figures/*.png
+reports/figures/*.jpg
